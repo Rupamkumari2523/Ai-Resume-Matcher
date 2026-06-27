@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - CareerAI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="http://127.0.0.1:5000/api/config.js"></script>
+    <script src="auth.js"></script>
+    <script>
+        // Let auth.js handle redirection via Supabase
+        window.addEventListener('DOMContentLoaded', () => {
+            if (typeof checkLoginRedirect === 'function') checkLoginRedirect();
+        });
+    </script>
+    <style>
+        .auth-wrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.1), transparent 400px),
+                radial-gradient(circle at bottom left, rgba(236, 72, 153, 0.05), transparent 400px);
+        }
+
+        .auth-card {
+            background: var(--card-bg, #1a1a2e);
+            border: 1px solid var(--border-color, #2a2a3e);
+            border-radius: 16px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-card h2 {
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .auth-card p.subtitle {
+            color: var(--text-secondary, #9ca3af);
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary, #9ca3af);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color, #2a2a3e);
+            border-radius: 8px;
+            color: #fff;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary, #6366f1);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 0.85rem;
+            margin-top: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .toggle-text {
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--text-secondary, #9ca3af);
+        }
+
+        .toggle-text a {
+            color: var(--primary, #6366f1);
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .toggle-text a:hover {
+            text-decoration: underline;
+        }
+
+        .alert {
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .alert.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+            display: block;
+        }
+
+        .alert.success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #10b981;
+            display: block;
+        }
+
+        /* Tab specific displays */
+        .show-signup #login-form-content {
+            display: none;
+        }
+
+        .show-signup #signup-form-content {
+            display: block;
+        }
+
+        #signup-form-content {
+            display: none;
+        }
+    </style>
+</head>
+
+<body class="loading">
+    <div class="auth-wrapper">
+        <div class="auth-card" id="auth-container">
+            <div id="alert-box" class="alert"></div>
+
+            <!-- Login View -->
+            <div id="login-form-content">
+                <h2>Welcome Back</h2>
+                <p class="subtitle">Log in to your CareerAI account</p>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="login-email" required placeholder="you@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="login-password" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn-primary auth-btn">Log In</button>
+
+                    <div style="display:flex; align-items: center; margin: 1rem 0; color: var(--text-secondary);">
+                        <hr style="flex:1; border:none; border-top:1px solid #2a2a3e;">
+                        <span style="padding: 0 10px; font-size:0.85rem;">OR</span>
+                        <hr style="flex:1; border:none; border-top:1px solid #2a2a3e;">
+                    </div>
+                    <button type="button" id="google-login-btn" class="btn-secondary auth-btn"
+                        style="background: white; color: #333; display: flex; justify-content: center; align-items: center; gap: 8px;">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg"
+                            alt="Google Logo" width="18">
+                        Continue with Google
+                    </button>
+
+                    <p class="toggle-text">Don't have an account? <a id="go-to-signup">Sign up</a></p>
+                </form>
+            </div>
+
+            <!-- Signup View -->
+            <div id="signup-form-content">
+                <h2>Create Account</h2>
+                <p class="subtitle">Join CareerAI to accelerate your career</p>
+                <form id="signup-form">
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="signup-email" required placeholder="you@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="signup-password" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn-primary auth-btn">Sign Up</button>
+
+                    <div style="display:flex; align-items: center; margin: 1rem 0; color: var(--text-secondary);">
+                        <hr style="flex:1; border:none; border-top:1px solid #2a2a3e;">
+                        <span style="padding: 0 10px; font-size:0.85rem;">OR</span>
+                        <hr style="flex:1; border:none; border-top:1px solid #2a2a3e;">
+                    </div>
+                    <button type="button" id="google-signup-btn" class="btn-secondary auth-btn"
+                        style="background: white; color: #333; display: flex; justify-content: center; align-items: center; gap: 8px;">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg"
+                            alt="Google Logo" width="18">
+                        Sign up with Google
+                    </button>
+
+                    <p class="toggle-text">Already have an account? <a id="go-to-login">Log in</a></p>
+                </form>
+            </div>
+
+            <!-- ✅ CHANGED: index.html → landing.html -->
+            <p style="text-align: center; margin-top: 1rem;"><a href="landing.html"
+                    style="color: var(--text-secondary); font-size: 0.85rem; text-decoration: none;">← Back to Home</a>
+            </p>
+        </div>
+    </div>
+    <script src="login.js"></script>
+</body>
+
+</html>

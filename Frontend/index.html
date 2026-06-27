@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Career Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="http://127.0.0.1:5000/api/config.js"></script>
+    <script src="auth.js"></script>
+    <script>
+        // Protect route
+        const currentUser = checkAuth();
+    </script>
+</head>
+
+<body>
+    <div class="scroll-progress" id="scroll-progress"></div>
+    <nav class="navbar">
+        <div class="logo">Career<span>AI</span></div>
+        <ul class="nav-links">
+            <li class="active" data-target="resume-matcher">Resume Matcher</li>
+            <li data-target="skill-gap">Skill Gap Analyzer</li>
+            <li data-target="job-matcher">Eligible Roles</li>
+        </ul>
+        <div class="auth-container" style="position: relative;">
+            <button id="signin-btn" class="btn-primary btn-sm hidden">Sign In</button>
+            <div id="user-profile" class="user-profile" style="cursor: pointer;">
+                <div class="avatar">U</div>
+                <span class="username">user@careerai.com</span>
+            </div>
+
+            <!-- Modern Dropdown Menu -->
+            <div id="profile-dropdown"
+                style="display: none; position: absolute; right: 0; top: 110%; background: var(--card-bg, #1a1a2e); border: 1px solid var(--border-color, #2a2a3e); border-radius: 8px; padding: 0.5rem; min-width: 150px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 100;">
+                <div
+                    style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 0.5rem; text-align: center;">
+                    <span
+                        style="color: var(--text-secondary); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;">Account</span>
+                </div>
+                <button id="logout-btn"
+                    style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.6rem 1rem; border-radius: 6px; cursor: pointer; transition: 0.2s; font-family: inherit; font-size: 0.9rem;"
+                    onmouseover="this.style.background='rgba(239, 68, 68, 0.2)'"
+                    onmouseout="this.style.background='rgba(239, 68, 68, 0.1)'">
+                    <span>🚪</span> Sign Out
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="hero-section">
+            <h1 class="main-title">Smart AI Career Assistant for Resume, Jobs & Skills</h1>
+        </div>
+
+        <!-- Resume Matcher Section -->
+        <section id="resume-matcher" class="tab-content active">
+            <div class="header-text">
+                <h1>Resume Matcher</h1>
+                <p>Upload your resume to see how well you match with your target role.</p>
+            </div>
+
+            <div class="card">
+                <div class="upload-area" id="drop-zone">
+                    <div class="upload-icon">📄</div>
+                    <h3>Drag & Drop your resume here</h3>
+                    <p>or</p>
+                    <button class="btn-outline">Browse Files</button>
+                    <input type="file" hidden id="file-input" accept=".pdf,.doc,.docx">
+                </div>
+
+                <div class="input-group">
+                    <label>Target Job Description</label>
+                    <textarea placeholder="Paste the job description here..."></textarea>
+                </div>
+
+                <button id="analyze-resume-btn" class="btn-primary w-100">Analyze Match</button>
+
+                <!-- Resume Match Results (Hidden by default) -->
+                <div id="resume-results" class="results-container hidden mt-8 border-top pt-6">
+                    <h3 class="results-title mb-6">Resume Analysis Results</h3>
+
+                    <div class="match-score-container mb-6"
+                        style="display: flex; align-items: center; gap: 2rem; background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                        <!-- Circular Progress Graph -->
+                        <div class="circular-chart"
+                            style="position: relative; width: 100px; height: 100px; flex-shrink: 0;">
+                            <svg viewBox="0 0 36 36" style="width: 100%; height: 100%;">
+                                <path class="circle-bg"
+                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                    style="fill: none; stroke: rgba(255, 255, 255, 0.1); stroke-width: 3.8;" />
+                                <path id="match-circle-path" class="circle" stroke-dasharray="85, 100"
+                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                    style="fill: none; stroke: var(--success); stroke-width: 3.8; stroke-linecap: round; animation: progress 1.5s ease-out forwards;" />
+                            </svg>
+                            <div id="match-percentage-text" class="percentage"
+                                style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.4rem; font-weight: 700; color: var(--success);">
+                                85%</div>
+                        </div>
+
+                        <div>
+                            <h4 style="font-size: 1.2rem; margin-bottom: 0.5rem; color: var(--text-primary);">Great
+                                Match!</h4>
+                            <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.5;">Your
+                                resume
+                                strongly aligns with the core requirements of this Job Description. Focus on
+                                learning
+                                the missing skills to reach 100%.</p>
+                        </div>
+                    </div>
+
+                    <div class="skills-breakdown" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                        <div class="skills-box"
+                            style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); padding: 1.5rem; border-radius: 12px;">
+                            <h4
+                                style="color: var(--success); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                                ✅ Skills You Have</h4>
+                            <div id="found-skills-container" class="gap-tags">
+                                <span class="gap-tag"
+                                    style="background: rgba(16, 185, 129, 0.2); color: #fff; border: 1px solid rgba(16,185,129,0.3);">React</span>
+                                <span class="gap-tag"
+                                    style="background: rgba(16, 185, 129, 0.2); color: #fff; border: 1px solid rgba(16,185,129,0.3);">JavaScript</span>
+                                <span class="gap-tag"
+                                    style="background: rgba(16, 185, 129, 0.2); color: #fff; border: 1px solid rgba(16,185,129,0.3);">HTML/CSS</span>
+                                <span class="gap-tag"
+                                    style="background: rgba(16, 185, 129, 0.2); color: #fff; border: 1px solid rgba(16,185,129,0.3);">Git</span>
+                            </div>
+                        </div>
+
+                        <div class="skills-box"
+                            style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); padding: 1.5rem; border-radius: 12px;">
+                            <h4
+                                style="color: var(--warning); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                                ⚠️ Missing Skills</h4>
+                            <div id="missing-skills-container" class="gap-tags">
+                                <span class="gap-tag">TypeScript</span>
+                                <span class="gap-tag">Redux</span>
+                                <span class="gap-tag">Jest</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Skill Gap Analyzer Section -->
+        <section id="skill-gap" class="tab-content">
+            <div class="header-text">
+                <h1>Skill Gap Analyzer</h1>
+                <p>Identify missing skills for your dream role and get learning recommendations.</p>
+            </div>
+
+            <div class="card">
+                <div class="two-col">
+                    <div class="upload-area" id="skill-drop-zone" style="padding: 2rem 1rem; margin-bottom: 0;">
+                        <div class="upload-icon" style="font-size: 2.5rem; margin-bottom: 0.5rem;">📄</div>
+                        <h3 id="skill-upload-title" style="font-size: 1.1rem;">Upload Resume</h3>
+                        <p id="skill-upload-desc" style="font-size: 0.85rem; margin-bottom: 1rem;">Let AI analyze
+                            your
+                            current skills</p>
+                        <button class="btn-outline" style="font-size: 0.85rem; padding: 0.5rem 1rem;">Browse</button>
+                        <input type="file" hidden id="skill-file-input" accept=".pdf,.doc,.docx">
+                    </div>
+                    <div class="input-group" style="display: flex; flex-direction: column; justify-content: center;">
+                        <label>Target Role / Job Title</label>
+                        <input type="text" id="target-role" placeholder="e.g. Senior Frontend Developer"
+                            style="margin-bottom: 1rem;">
+                        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5;">We will
+                            predict
+                            your skill gaps based on your resume and suggest the best YouTube learning resources for
+                            this target role.</p>
+                    </div>
+                </div>
+
+                <button id="analyze-gap-btn" class="btn-primary w-100 mt-4">Analyze Skill Gaps</button>
+
+                <!-- Skill Gap Results (Hidden by default) -->
+                <div id="skill-gap-results" class="results-container hidden mt-8 border-top pt-6">
+                    <h3 class="results-title">Identified Skill Gaps for <span class="highlight">Senior Frontend
+                            Developer</span></h3>
+
+                    <div id="skill-gap-tags-container" class="gap-tags mt-4 mb-6">
+                        <span class="gap-tag">TypeScript</span>
+                        <span class="gap-tag">Next.js</span>
+                        <span class="gap-tag">GraphQL</span>
+                        <span class="gap-tag">System Design</span>
+                    </div>
+
+                    <h4 class="mb-4" style="color: var(--text-secondary); font-weight: 500;">Recommended Learning
+                        Resources (YouTube)</h4>
+
+                    <div id="youtube-videos-container" class="video-grid">
+                        <a href="javascript:void(0)" class="video-card">
+                            <div class="video-thumb">
+                                <span class="play-icon">▶</span>
+                                <div class="thumb-overlay"></div>
+                                <span class="duration">1:12:45</span>
+                            </div>
+                            <div class="video-info">
+                                <h5>TypeScript Full Course for Beginners</h5>
+                                <p>CodeWithDave</p>
+                            </div>
+                        </a>
+
+                        <a href="javascript:void(0)" class="video-card">
+                            <div class="video-thumb">
+                                <span class="play-icon">▶</span>
+                                <div class="thumb-overlay"></div>
+                                <span class="duration">48:20</span>
+                            </div>
+                            <div class="video-info">
+                                <h5>Next.js 14 App Router Crash Course</h5>
+                                <p>Tech Mastery</p>
+                            </div>
+                        </a>
+
+                        <a href="javascript:void(0)" class="video-card">
+                            <div class="video-thumb">
+                                <span class="play-icon">▶</span>
+                                <div class="thumb-overlay"></div>
+                                <span class="duration">2:30:10</span>
+                            </div>
+                            <div class="video-info">
+                                <h5>GraphQL vs REST - Which to choose?</h5>
+                                <p>WebDev Simplified</p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Job Matcher Section -->
+        <section id="job-matcher" class="tab-content">
+            <div class="header-text">
+                <h1>Eligible Roles Predictor</h1>
+                <p>Discover which job roles you are eligible for based on your resume analysis.</p>
+            </div>
+
+            <div class="card">
+                <div class="upload-area" id="job-drop-zone">
+                    <div class="upload-icon">📁</div>
+                    <h3 id="job-upload-title">Upload Resume to Find Roles</h3>
+                    <p id="job-upload-desc">We will analyze your experience to find your best-fit job titles</p>
+                    <button class="btn-outline">Select Resume</button>
+                    <input type="file" hidden id="job-file-input" accept=".pdf,.doc,.docx">
+                </div>
+
+                <button id="find-roles-btn" class="btn-primary w-100 mt-4">Discover Eligible Roles</button>
+
+                <!-- Eligible Roles Results (Hidden by default) -->
+                <div id="eligible-roles-results" class="hidden mt-8 border-top pt-6">
+                    <h3 class="results-title mb-6">Top Eligible Roles for You</h3>
+
+                    <div class="job-list">
+                        <div class="job-card" style="display: flex; flex-direction: column; gap: 1rem;">
+                            <div class="job-header" style="margin-bottom: 0">
+                                <div>
+                                    <h3 style="color: #fb923c">Senior Frontend Developer</h3>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.3rem;">
+                                        <span
+                                            style="background: rgba(16, 185, 129, 0.2); color: var(--success); padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.8rem; font-weight: 600;">98%
+                                            Match</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="ai-explanation"
+                                style="background: rgba(139, 92, 246, 0.05); border-left: 3px solid var(--primary); padding: 1rem; border-radius: 0 8px 8px 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-secondary);">
+                                <strong
+                                    style="color: var(--primary); display: block; margin-bottom: 0.3rem; font-size: 0.85rem;"><span
+                                        style="margin-right:0.3rem">✨</span>AI Reasoning</strong>
+                                You have 4+ years of experience with React and modern JavaScript. Your recent projects
+                                heavily utilize Redux and CSS, perfectly aligning with the core requirements of Senior
+                                Frontend positions. This is a very strong match for your current skill set.
+                            </div>
+
+                            <div class="job-tags" style="margin-top: 0.5rem; margin-bottom: 0">
+                                <span>React</span>
+                                <span>TypeScript</span>
+                                <span>Web Development</span>
+                            </div>
+                        </div>
+
+                        <div class="job-card" style="display: flex; flex-direction: column; gap: 1rem;">
+                            <div class="job-header" style="margin-bottom: 0">
+                                <div>
+                                    <h3 style="color: #fb923c">UI/UX Engineer</h3>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.3rem;">
+                                        <span
+                                            style="background: rgba(16, 185, 129, 0.2); color: var(--success); padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.8rem; font-weight: 600;">85%
+                                            Match</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="ai-explanation"
+                                style="background: rgba(139, 92, 246, 0.05); border-left: 3px solid var(--primary); padding: 1rem; border-radius: 0 8px 8px 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-secondary);">
+                                <strong
+                                    style="color: var(--primary); display: block; margin-bottom: 0.3rem; font-size: 0.85rem;"><span
+                                        style="margin-right:0.3rem">✨</span>AI Reasoning</strong>
+                                Your extensive history of building component libraries makes you a strong candidate. You
+                                bridge the gap between design and engineering effortlessly. Adding more Figma
+                                prototyping projects to your portfolio could push this match to 95%+.
+                            </div>
+
+                            <div class="job-tags" style="margin-top: 0.5rem; margin-bottom: 0">
+                                <span>Figma</span>
+                                <span>CSS Architecture</span>
+                                <span>Prototyping</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
